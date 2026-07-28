@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#f7f7fb"><title>לוח ישראלי</title>
+<link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="icon.svg">
+<style>
+:root{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;color:#17171c;background:#f7f7fb}*{box-sizing:border-box}body{margin:0}.app{max-width:760px;margin:auto;padding:max(16px,env(safe-area-inset-top)) 14px 40px}.top{display:flex;justify-content:space-between;align-items:center;gap:10px}.title{font-size:24px;font-weight:800}.nav{display:flex;gap:8px}.nav button,.today{border:0;background:white;border-radius:12px;padding:10px 13px;box-shadow:0 1px 8px #0001;font-size:16px}.month{font-size:21px;font-weight:750;margin:20px 2px 12px}.week,.grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}.week div{text-align:center;font-size:12px;color:#777;padding:4px}.day{min-height:78px;background:white;border-radius:13px;padding:7px;border:2px solid transparent;position:relative;box-shadow:0 1px 5px #0000000a}.day.empty{background:transparent;box-shadow:none}.day.todayCell{border-color:#222}.num{font-weight:750}.heb{font-size:10px;color:#777;margin-top:2px;white-space:nowrap;overflow:hidden}.event{font-size:10px;margin-top:5px;padding:3px 5px;border-radius:7px;line-height:1.25}.off{background:#fee2e2;color:#991b1b;font-weight:750}.short{background:#ffedd5;color:#9a3412}.observance{background:#dbeafe;color:#1e3a8a}.legend{display:flex;gap:8px;flex-wrap:wrap;margin:14px 2px}.pill{font-size:12px;padding:6px 9px;border-radius:999px}.panel{position:fixed;inset:auto 0 0 0;background:white;border-radius:22px 22px 0 0;padding:20px 18px calc(22px + env(safe-area-inset-bottom));box-shadow:0 -8px 30px #0002;transform:translateY(110%);transition:.2s;z-index:3;max-height:60vh;overflow:auto}.panel.open{transform:none}.overlay{display:none;position:fixed;inset:0;background:#0005;z-index:2}.overlay.open{display:block}.panel h2{margin:0 0 5px}.close{float:left;border:0;background:#eee;border-radius:10px;padding:7px 11px}.note{font-size:12px;color:#666;line-height:1.5;margin-top:20px}.install{background:#17171c;color:white;border-radius:15px;padding:13px;margin:15px 0;font-size:14px;display:none}@media(display-mode:standalone){.install{display:none!important}}@media(max-width:500px){.day{min-height:70px;padding:5px}.event{font-size:9px}.heb{font-size:9px}}
+</style>
+</head>
+<body><main class="app">
+<div class="top"><div class="title">לוח ישראלי</div><div class="nav"><button id="prev">‹</button><button id="next">›</button></div></div>
+<button class="today" id="today">היום</button><div class="install" id="install">להתקנה באייפון: לחצו על כפתור השיתוף ב‑Safari ואז „הוסף למסך הבית”.</div>
+<div class="month" id="monthTitle"></div>
+<div class="week"><div>א׳</div><div>ב׳</div><div>ג׳</div><div>ד׳</div><div>ה׳</div><div>ו׳</div><div>ש׳</div></div><div class="grid" id="grid"></div>
+<div class="legend"><span class="pill off">יום חופש רשמי</span><span class="pill short">ערב חג / מקוצר</span><span class="pill observance">מועד ללא חופש כללי</span></div>
+<div class="note">הסימון מתייחס בעיקר לעובדים יהודים, או לעובדים שבחרו בחגי ישראל כימי החג שלהם. הסכמים קיבוציים, ענף העבודה, מקום העבודה ואופן ההעסקה יכולים לשנות את הזכאות בפועל.</div>
+</main><div class="overlay" id="overlay"></div><section class="panel" id="panel"><button class="close" id="close">סגור</button><h2 id="pTitle"></h2><div id="pDate"></div><p id="pDesc"></p></section>
+<script src="events.js"></script><script>
+const monthNames=['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
+let view=new Date(); view.setDate(1); const grid=document.getElementById('grid');
+const fmtHeb=new Intl.DateTimeFormat('he-IL-u-ca-hebrew',{day:'numeric',month:'short'});
+const byDate={}; HOLIDAY_EVENTS.forEach(e=>(byDate[e.date]??=[]).push(e));
+function iso(d){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}
+function render(){grid.innerHTML=''; document.getElementById('monthTitle').textContent=`${monthNames[view.getMonth()]} ${view.getFullYear()}`; const first=view.getDay(), count=new Date(view.getFullYear(),view.getMonth()+1,0).getDate(); for(let i=0;i<first;i++){let x=document.createElement('div');x.className='day empty';grid.append(x)} for(let n=1;n<=count;n++){const d=new Date(view.getFullYear(),view.getMonth(),n), key=iso(d), cell=document.createElement('div');cell.className='day';if(key===iso(new Date()))cell.classList.add('todayCell');cell.innerHTML=`<div class="num">${n}</div><div class="heb">${fmtHeb.format(d)}</div>`;(byDate[key]||[]).slice(0,2).forEach(e=>{let el=document.createElement('div');el.className=`event ${e.category}`;el.textContent=e.name;el.onclick=(ev)=>{ev.stopPropagation();openPanel(e,d)};cell.append(el)});grid.append(cell)}}
+function openPanel(e,d){document.getElementById('pTitle').textContent=e.name;document.getElementById('pDate').textContent=`${d.toLocaleDateString('he-IL',{weekday:'long',year:'numeric',month:'long',day:'numeric'})} · ${fmtHeb.format(d)}`;document.getElementById('pDesc').textContent=e.description;document.getElementById('panel').classList.add('open');document.getElementById('overlay').classList.add('open')}
+function close(){document.getElementById('panel').classList.remove('open');document.getElementById('overlay').classList.remove('open')}
+document.getElementById('prev').onclick=()=>{view.setMonth(view.getMonth()-1);render()};document.getElementById('next').onclick=()=>{view.setMonth(view.getMonth()+1);render()};document.getElementById('today').onclick=()=>{view=new Date();view.setDate(1);render()};document.getElementById('close').onclick=close;document.getElementById('overlay').onclick=close;
+if(!window.matchMedia('(display-mode: standalone)').matches)document.getElementById('install').style.display='block';
+if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js');render();
+</script></body></html>
